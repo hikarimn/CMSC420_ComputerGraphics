@@ -6,7 +6,8 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
+
+#include "pch.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -182,14 +183,29 @@ struct Geometry {
 
 
 // Vertex buffer and index buffer associated with the ground and cube geometry
-static shared_ptr<Geometry> g_ground, g_cube;
+static shared_ptr<Geometry> g_ground, g_cube1, g_cube2;
 
 // --------- Scene
 
 static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
-static Matrix4 g_objectRbt[1] = {Matrix4::makeTranslation(Cvec3(0,0,0))};  // currently only 1 obj is defined
-static Cvec3f g_objectColors[1] = {Cvec3f(1, 0, 0)};
+
+//Matrix4 g_objectRbt[1] = { Matrix4::makeTranslation(Cvec3(-1,0,0)) };  // currently only 1 obj is defined //matrix for a red cube
+Matrix4 g_objectRbt[1] = { Matrix4::makeTranslation(Cvec3(1,0,0)) };
+//static Matrix4 g_objectRbt[2] = { Matrix4::makeTranslation(Cvec3(1,0,0)) };
+static Cvec3f g_objectColors1[1] = {Cvec3f(1, 0, 0)};
+static Cvec3f g_objectColors2[1] = {Cvec3f(0, 0, 1) };
+static bool RorB = true; // original cube user is interacting is red one
+
+
+//Original Ones
+//static Matrix4 g_objectRbt[1] = {Matrix4::makeTranslation(Cvec3(0,0,0))};  // currently only 1 obj is defined
+//static Cvec3f g_objectColors[1] = {Cvec3f(1, 0, 0)};
+
+
+//  You should set up a global variable of type bool. When that variable is true it means that the user is interacting with the red cube. 
+//Update the code in the motion() function to check that global. If it is true, the mouse motion will be used to update g_objectRbt[0]. 
+//If it is false, the motion() code will instead update g_objectRbt[1].
 
 ///////////////// END OF G L O B A L S //////////////////////////////////////////////////
 
@@ -206,6 +222,7 @@ static void initGround() {
   };
   unsigned short idx[] = {0, 1, 2, 0, 2, 3};
   g_ground.reset(new Geometry(&vtx[0], &idx[0], 4, 6));
+  
 }
 
 static void initCubes() {
@@ -217,7 +234,8 @@ static void initCubes() {
   vector<unsigned short> idx(ibLen);
 
   makeCube(1, vtx.begin(), idx.begin());
-  g_cube.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
+  g_cube1.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
+  g_cube2.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
 }
 
 // takes a projection matrix and send to the the shaders
@@ -282,11 +300,20 @@ static void drawStuff() {
 
   // draw cubes
   // ==========
-  MVM = invEyeRbt * g_objectRbt[0];
+  /*
+  Matrix4 MVM1 = invEyeRbt * g_objectRbt[1];
+  Matrix4 NMVM1 = normalMatrix(MVM1);
+  sendModelViewNormalMatrix(curSS, MVM1, NMVM1);
+  safe_glUniform3f(curSS.h_uColor, g_objectColors1[0][0], g_objectColors1[0][1], g_objectColors1[0][2]);
+  g_cube1->draw(curSS);
+  */
+  //added this to draw another cube
+  MVM = invEyeRbt * g_objectRbt[1];
   NMVM = normalMatrix(MVM);
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
-  safe_glUniform3f(curSS.h_uColor, g_objectColors[0][0], g_objectColors[0][1], g_objectColors[0][2]);
-  g_cube->draw(curSS);
+  safe_glUniform3f(curSS.h_uColor, g_objectColors2[0][0], g_objectColors2[0][1], g_objectColors2[0][2]);
+  g_cube2->draw(curSS);
+
 }
 
 static void display() {
@@ -310,6 +337,40 @@ static void reshape(const int w, const int h) {
 }
 
 static void motion(const int x, const int y) {
+	const double dx = x - g_mouseClickX;
+	const double dy = g_windowHeight - y - 1 - g_mouseClickY;
+
+	Matrix4 m;
+	if (g_mouseLClickButton && !g_mouseRClickButton) { // left button down?
+		m = Matrix4::makeXRotation(-dy) * Matrix4::makeYRotation(dx);
+	}
+	else if (g_mouseRClickButton && !g_mouseLClickButton) { // right button down?
+		m = Matrix4::makeTranslation(Cvec3(dx, dy, 0) * 0.01);
+	}
+	else if (g_mouseMClickButton || (g_mouseLClickButton && g_mouseRClickButton)) {  // middle or (left and right) button down?
+		m = Matrix4::makeTranslation(Cvec3(0, 0, -dy) * 0.01);
+	}
+
+	if (g_mouseClickDown) {
+		//if (RorB == true) {
+		//	g_objectRbt[1] *= m; // Simply right-multiply is WRONG
+		//	RorB = false;
+		//}
+		//if(RorB == false) {
+			g_objectRbt[1] *= m;
+		//	RorB = true;
+		//}
+		
+		glutPostRedisplay(); // we always redraw if we changed the scene
+	}
+
+	g_mouseClickX = x;
+	g_mouseClickY = g_windowHeight - y - 1;
+}
+
+//original motion 
+/*
+static void motion(const int x, const int y) {
   const double dx = x - g_mouseClickX;
   const double dy = g_windowHeight - y - 1 - g_mouseClickY;
 
@@ -325,14 +386,15 @@ static void motion(const int x, const int y) {
   }
 
   if (g_mouseClickDown) {
-    g_objectRbt[0] *= m; // Simply right-multiply is WRONG
+    g_objectRbt1[0] *= m; // Simply right-multiply is WRONG
+	//g_objectRbt2[0] *= m; 
     glutPostRedisplay(); // we always redraw if we changed the scene
   }
 
   g_mouseClickX = x;
   g_mouseClickY = g_windowHeight - y - 1;
 }
-
+*/
 
 static void mouse(const int button, const int state, const int x, const int y) {
   g_mouseClickX = x;
@@ -370,6 +432,11 @@ static void keyboard(const unsigned char key, const int x, const int y) {
   case 'f':
     g_activeShader ^= 1;
     break;
+  case 'o':
+	glutMotionFunc(motion);
+	 
+	 //switch blue and red cube move
+	 break;
   }
   glutPostRedisplay();
 }
@@ -383,6 +450,7 @@ static void initGlutState(int argc, char * argv[]) {
   glutDisplayFunc(display);                               // display rendering callback
   glutReshapeFunc(reshape);                               // window reshape callback
   glutMotionFunc(motion);                                 // mouse movement callback
+  
   glutMouseFunc(mouse);                                   // mouse click callback
   glutKeyboardFunc(keyboard);
 }
