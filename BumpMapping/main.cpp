@@ -172,8 +172,7 @@ static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
 
 // --------- Scene
 
-//static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
-static const Cvec3 g_light(0.0, 0.25, 4.0);    // define two lights positions in world space//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static const Cvec3 g_light(0.0, 0.25, 4.0);    // define a light positions in world space//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
 static Matrix4 g_objectRbt[3] = {Matrix4::makeTranslation(Cvec3(-1,0,0)),Matrix4::makeTranslation(Cvec3(1,0,0)), Matrix4::makeTranslation(g_light)};  // Two cubes and a sphere
 static Cvec3f g_objectColors[3] = {Cvec3f(1, 0, 0),Cvec3f(0, 0, 1),Cvec3f(1, 1, 0) };
@@ -263,11 +262,8 @@ static void drawStuff() {
   const Matrix4 eyeRbt =g_skyRbt;
   const Matrix4 invEyeRbt = inv(eyeRbt);
 
-  //const Cvec3 eyeLight1 = Cvec3(invEyeRbt * Cvec4(g_light1, 1)); // g_light1 position in eye coordinates
-  //const Cvec3 eyeLight2 = Cvec3(invEyeRbt * Cvec4(g_light2, 1)); // g_light2 position in eye coordinates
   const Cvec3 eyeLight = Cvec3(invEyeRbt * Cvec4(g_light, 1)); // g_light position in eye coordinates
   safe_glUniform3f(curSS.h_uLight, eyeLight[0], eyeLight[1], eyeLight[2]);
-  //safe_glUniform3f(curSS.h_uLight2, eyeLight2[0], eyeLight2[1], eyeLight2[2]);
   safe_glUniform1i(curSS.h_uUseTexture,0); // Turn off textures for the ground and the first cube
   
   // draw ground
@@ -344,7 +340,10 @@ static void motion(const int x, const int y) {
 			M = Matrix4::makeTranslation(Cvec3(0, 0, -dy) * 0.01);
 			g_objectRbt[g_activeCube] = A * M*inv(A)*g_objectRbt[g_activeCube];
 		}
-
+		if (g_activeCube == 2) {
+			g_light = g_objectRbt[g_activeCube]
+		}
+		else {}
 		glutPostRedisplay(); // we always redraw if we changed the scene
 
 	}
@@ -490,36 +489,3 @@ int main(int argc, char * argv[]) {
     return -1;
   }
 }
-
-/*
-original motion function heree
-static void motion(const int x, const int y) {
-  const double dx = x - g_mouseClickX;
-  const double dy = g_windowHeight - y - 1 - g_mouseClickY;
-
-  if (g_mouseClickDown) {
-	  RigTForm A(g_objectRbt[g_activeCube].getTranslation(), g_skyRbt.getRotation());
-	  RigTForm M;
-
-	  if (g_mouseLClickButton && !g_mouseRClickButton) { // left button down?
-		  // Do M to O with respect to A
-		  M.setRotation(Quat::makeXRotation(-dy) * Quat::makeYRotation(dx));
-		  g_objectRbt[g_activeCube] = A*M*inv(A)*g_objectRbt[g_activeCube];
-	  }
-	  else if (g_mouseRClickButton && !g_mouseLClickButton) { // right button down?
-		  M.setTranslation(Cvec3(dx, dy, 0) * 0.01);
-		  g_objectRbt[g_activeCube] = A*M*inv(A)*g_objectRbt[g_activeCube];
-	  }
-	  else if (g_mouseMClickButton || (g_mouseLClickButton && g_mouseRClickButton)) {  // middle or (left and right) button down?
-		  M.setTranslation(Cvec3(0, 0, -dy) * 0.01);
-		  g_objectRbt[g_activeCube] = A*M*inv(A)*g_objectRbt[g_activeCube];
-	  }
-
-	  glutPostRedisplay(); // we always redraw if we changed the scene
-
-  }
-
-  g_mouseClickX = x;
-  g_mouseClickY = g_windowHeight - y - 1;
-}
-*/
