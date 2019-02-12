@@ -347,7 +347,7 @@ static void motion(const int x, const int y) {
 			const Matrix4 eyeRbt = g_skyRbt;
 			const Matrix4 invEyeRbt = inv(eyeRbt);
 
-			g_objectRbt[2] *= M;
+			g_objectRbt[g_activeCube] = A * M*inv(A)*g_objectRbt[g_activeCube];
 			Cvec3 eyeLight = Cvec3(invEyeRbt * Cvec4(getTranslation(g_objectRbt[2]), 1)); // g_light position in eye coordinates
 			safe_glUniform3f(curSS.h_uLight, eyeLight[0], eyeLight[1], eyeLight[2]);
 		}
