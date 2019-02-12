@@ -307,5 +307,9 @@ inline Matrix4 linFact(const Matrix4& m) {
 	return r;
 }
 
+inline Cvec3 getTranslation(const Matrix4& m) {
+	return Cvec3(m(0, 3), m(1, 3), m(2, 3));
+}
+
 #endif
 
