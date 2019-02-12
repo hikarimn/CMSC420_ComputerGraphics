@@ -67,7 +67,6 @@ struct ShaderState {
 
     // Retrieve handles to uniform variables
     h_uLight = safe_glGetUniformLocation(h, "uLight");
-    //h_uLight2 = safe_glGetUniformLocation(h, "uLight2");
     h_uProjMatrix = safe_glGetUniformLocation(h, "uProjMatrix");
     h_uModelViewMatrix = safe_glGetUniformLocation(h, "uModelViewMatrix");
     h_uNormalMatrix = safe_glGetUniformLocation(h, "uNormalMatrix");
@@ -167,16 +166,21 @@ struct Geometry {
 };
 
 
-// Vertex buffer and index buffer associated with the ground and cube geometry amd sphere geometry
-static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
+// Vertex buffer and index buffer associated with the ground and wall geometry amd sphere geometry
+static shared_ptr<Geometry> g_ground, g_cube, g_sphere, g_wall;
 
 // --------- Scene
 
-static const Cvec3 g_light(0.0, 2.0, 0.0);    // define a light positions in world space//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static const Cvec3 g_light(0.0, 2.0, 0.0);    
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
-static Matrix4 g_objectRbt[3] = {Matrix4::makeTranslation(Cvec3(-1,0,0)),Matrix4::makeTranslation(Cvec3(1,0,0)), Matrix4::makeTranslation(g_light)};  // Two cubes and a sphere
+//static Matrix4 g_objectRbt[3] = {Matrix4::makeTranslation(Cvec3(-1,0,0)),Matrix4::makeTranslation(Cvec3(1,0,0)), Matrix4::makeTranslation(g_light)};  
+Matrix4 obj1 = Matrix4::makeTranslation(Cvec3(-2, -1, -1.5)) * Matrix4::makeXRotation(0.0, 1.0) * Matrix4::makeScale(Cvec3(0.01, 2, 2));
+//Matrix4 obj2 = Matrix4::makeTranslation(Cvec3(1, -2, 0)) * Matrix4::makeXRotation(1.0, 1.0) * Matrix4::makeScale(Cvec3(0.01, 1, 1));
+Matrix4 obj2 = Matrix4::makeTranslation(Cvec3(2, -1, -1.5)) * Matrix4::makeXRotation(0.0, 1.0) *  Matrix4::makeScale(Cvec3(0.01, 2, 2));
+static Matrix4 g_objectRbt[3] = { obj1,obj2, Matrix4::makeTranslation(g_light) };  // Two walls and a sphere
 static Cvec3f g_objectColors[3] = {Cvec3f(1, 0, 0),Cvec3f(0, 0, 1),Cvec3f(1, 1, 0) };
-static int g_activeCube = 0;
+static int g_activeCube = 2;
+
 
 ///////////////// END OF G L O B A L S //////////////////////////////////////////////////
 
@@ -216,6 +220,19 @@ static void initSphere() {
 	makeSphere(0.5, 20, 20, vtx.begin(), idx.begin());
 	g_sphere.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
 }
+/*
+static void initWalls() {
+	int ibLen, vbLen;
+	getCubeVbIbLen(vbLen, ibLen);
+
+	// Temporary storage for cube geometry
+	vector<VertexPNT> vtx(vbLen);
+	vector<unsigned short> idx(ibLen);
+
+	makeCube(1, vtx.begin(), idx.begin());
+	g_wall.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
+}
+*/
 
 // takes a projection matrix and send to the the shaders
 static void sendProjectionMatrix(const ShaderState& curSS, const Matrix4& projMatrix) {
@@ -273,22 +290,25 @@ static void drawStuff() {
   Matrix4 MVM = invEyeRbt * groundRbt;
   Matrix4 NMVM = normalMatrix(MVM);
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
-  safe_glUniform3f(curSS.h_uColor, 0.1, 0.95, 0.1); // set color
+  //safe_glUniform3f(curSS.h_uColor, 0.1, 0.95, 0.1); // set color
+  safe_glUniform1i(curSS.h_uUseTexture, 1); // Turn on textures for the second cube
   g_ground->draw(curSS);
 
   // draw cubes
   // ==========
+  //
   MVM = invEyeRbt * g_objectRbt[0];
   NMVM = normalMatrix(MVM);
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
-  safe_glUniform3f(curSS.h_uColor, g_objectColors[0][0], g_objectColors[0][1], g_objectColors[0][2]);
+  //safe_glUniform3f(curSS.h_uColor, g_objectColors[0][0], g_objectColors[0][1], g_objectColors[0][2]);
+  safe_glUniform1i(curSS.h_uUseTexture, 1); // Turn on textures for the second cube
   g_cube->draw(curSS);
 
   MVM = invEyeRbt * g_objectRbt[1];
   NMVM = normalMatrix(MVM);
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
-  safe_glUniform1i(curSS.h_uUseTexture,1); // Turn on textures for the second cube
   g_cube->draw(curSS);
+  
 
   // draw a sphere
   // ==========
@@ -298,6 +318,8 @@ static void drawStuff() {
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
   safe_glUniform3f(curSS.h_uColor, g_objectColors[2][0], g_objectColors[2][1], g_objectColors[2][2]);
   g_sphere->draw(curSS);
+
+  
 }
 
 static void display() {
@@ -395,9 +417,12 @@ static void keyboard(const unsigned char key, const int x, const int y) {
     writePpmScreenshot(g_windowWidth, g_windowHeight, "out.ppm");
     break;
   case 'o':
+	  /*
 	  if (g_activeCube == 0) g_activeCube = 1;
 	  else if (g_activeCube == 1) g_activeCube = 2;
 	  else g_activeCube = 0;
+	  */
+	  g_activeCube = 2;
 	  break;
   case '1':
 	  g_activeShader = 0;
@@ -464,8 +489,9 @@ static void loadTexture(GLuint texHandle, const char *ppmFilename) {
 static void initTextures() {
   g_tex.reset(new GlTexture());
   
-  loadTexture(*g_tex, "smiley.ppm");
- 
+  //loadTexture(*g_tex, "smiley.ppm");
+  loadTexture(*g_tex, "Fieldstone.ppm");
+
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, *g_tex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
