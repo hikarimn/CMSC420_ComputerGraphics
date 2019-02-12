@@ -172,7 +172,7 @@ static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
 
 // --------- Scene
 
-static const Cvec3 g_light(0.0, 0.25, 4.0);    // define a light positions in world space//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static const Cvec3 g_light(0.0, 2.0, 0.0);    // define a light positions in world space//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
 static Matrix4 g_objectRbt[3] = {Matrix4::makeTranslation(Cvec3(-1,0,0)),Matrix4::makeTranslation(Cvec3(1,0,0)), Matrix4::makeTranslation(g_light)};  // Two cubes and a sphere
 static Cvec3f g_objectColors[3] = {Cvec3f(1, 0, 0),Cvec3f(0, 0, 1),Cvec3f(1, 1, 0) };
@@ -207,13 +207,13 @@ static void initCubes() {
 
 static void initSphere() {
 	int ibLen, vbLen;
-	getSphereVbIbLen(8,8,vbLen, ibLen);
+	getSphereVbIbLen(20,20,vbLen, ibLen);
 
 	// Temporary storage for sphere geometry
 	vector<VertexPNT> vtx(vbLen);
 	vector<unsigned short> idx(ibLen);
 
-	makeSphere(0.5, 8, 8, vtx.begin(), idx.begin());
+	makeSphere(0.5, 20, 20, vtx.begin(), idx.begin());
 	g_sphere.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
 }
 
@@ -262,7 +262,7 @@ static void drawStuff() {
   const Matrix4 eyeRbt =g_skyRbt;
   const Matrix4 invEyeRbt = inv(eyeRbt);
 
-  const Cvec3 eyeLight = Cvec3(invEyeRbt * Cvec4(g_light, 1)); // g_light position in eye coordinates
+  Cvec3 eyeLight = Cvec3(invEyeRbt * Cvec4(getTranslation(g_objectRbt[2]) , 1)); // g_light position in eye coordinates
   safe_glUniform3f(curSS.h_uLight, eyeLight[0], eyeLight[1], eyeLight[2]);
   safe_glUniform1i(curSS.h_uUseTexture,0); // Turn off textures for the ground and the first cube
   
@@ -341,7 +341,15 @@ static void motion(const int x, const int y) {
 			g_objectRbt[g_activeCube] = A * M*inv(A)*g_objectRbt[g_activeCube];
 		}
 		if (g_activeCube == 2) {
-			g_light = g_objectRbt[g_activeCube]
+			const ShaderState& curSS = *g_shaderStates[g_activeShader];
+
+			// use the skyRbt as the eyeRbt
+			const Matrix4 eyeRbt = g_skyRbt;
+			const Matrix4 invEyeRbt = inv(eyeRbt);
+
+			g_objectRbt[2] *= M;
+			Cvec3 eyeLight = Cvec3(invEyeRbt * Cvec4(getTranslation(g_objectRbt[2]), 1)); // g_light position in eye coordinates
+			safe_glUniform3f(curSS.h_uLight, eyeLight[0], eyeLight[1], eyeLight[2]);
 		}
 		else {}
 		glutPostRedisplay(); // we always redraw if we changed the scene
