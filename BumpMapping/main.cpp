@@ -40,7 +40,7 @@ static bool g_mouseClickDown = false;    // is the mouse button pressed
 static bool g_mouseLClickButton, g_mouseRClickButton, g_mouseMClickButton;
 static int g_mouseClickX, g_mouseClickY; // coordinates for mouse click event
 static int g_activeShader = 0;
-
+static const ShaderState& curSS = *g_shaderStates[g_activeShader];
 
 struct ShaderState {
   GlProgram program;
@@ -102,12 +102,20 @@ static shared_ptr<GlTexture> g_tex; // our global texture instance
 struct VertexPNT {
   Cvec3f p, n;
   Cvec2f t;
-
+  Cvec3f tan, bin;
+ 
   VertexPNT() {}
   VertexPNT(float x, float y, float z,
+	  float nx, float ny, float nz,
+	  float tx, float ty)
+	  : p(x, y, z), n(nx, ny, nz), t(tx, ty)
+  {}
+  VertexPNT(float x, float y, float z,
            float nx, float ny, float nz,
-		   float tx, float ty)
-    : p(x,y,z), n(nx, ny, nz), t(tx,ty)
+		   float tu, float tv,
+		   float tx, float ty, float tz,
+		   float bx, float by, float bz)
+    : p(x,y,z), n(nx, ny, nz), t(tu,tv), tan(tx,ty,tz),bin(bx,by,bz)
   {}
 
   // Define copy constructor and assignment operator from GenericVertex so we can
@@ -120,6 +128,8 @@ struct VertexPNT {
     p = v.pos;
     n = v.normal;
 	t = v.tex;
+	tan = v.tangent;
+	bin = v.binormal;
     return *this;
   }
 };
@@ -131,6 +141,18 @@ struct Geometry {
   Geometry(VertexPNT *vtx, unsigned short *idx, int vboLen, int iboLen) {
     this->vboLen = vboLen;
     this->iboLen = iboLen;
+	Cvec4 obj;
+	Cvec4 s = (0, 0, 1, 0);  //?????????????????????
+	Cvec4 eye;
+	Matrix4 T = (vtx->tan[0], vtx->tan[1],vtx->tan[2],0,vtx->bin[0],vtx->bin[1],vtx->bin[2],vtx->n[0],vtx->n[1],vtx->n[2],0,0,0,1);
+	
+	obj = T * s;
+	Matrix4 M = curSS.h_uModelViewMatrix;
+	eye = M * obj;      //?????????????????
+	Cvec4 nvec = (vtx->t[0], vtx->t[1], vtx->t[2], 1);
+	Cvec3 dot = dot(normalize(transpose(inv(M))*T*nvec), normalize(obj));
+
+
 
     // Now create the VBO and IBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -173,9 +195,7 @@ static shared_ptr<Geometry> g_ground, g_cube, g_sphere, g_wall;
 
 static const Cvec3 g_light(0.0, 2.0, 0.0);    
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
-//static Matrix4 g_objectRbt[3] = {Matrix4::makeTranslation(Cvec3(-1,0,0)),Matrix4::makeTranslation(Cvec3(1,0,0)), Matrix4::makeTranslation(g_light)};  
 Matrix4 obj1 = Matrix4::makeTranslation(Cvec3(-2, -1, -1.5)) * Matrix4::makeXRotation(0.0, 1.0) * Matrix4::makeScale(Cvec3(0.01, 2, 2));
-//Matrix4 obj2 = Matrix4::makeTranslation(Cvec3(1, -2, 0)) * Matrix4::makeXRotation(1.0, 1.0) * Matrix4::makeScale(Cvec3(0.01, 1, 1));
 Matrix4 obj2 = Matrix4::makeTranslation(Cvec3(2, -1, -1.5)) * Matrix4::makeXRotation(0.0, 1.0) *  Matrix4::makeScale(Cvec3(0.01, 2, 2));
 static Matrix4 g_objectRbt[3] = { obj1,obj2, Matrix4::makeTranslation(g_light) };  // Two walls and a sphere
 static Cvec3f g_objectColors[3] = {Cvec3f(1, 0, 0),Cvec3f(0, 0, 1),Cvec3f(1, 1, 0) };
@@ -220,19 +240,7 @@ static void initSphere() {
 	makeSphere(0.5, 20, 20, vtx.begin(), idx.begin());
 	g_sphere.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
 }
-/*
-static void initWalls() {
-	int ibLen, vbLen;
-	getCubeVbIbLen(vbLen, ibLen);
 
-	// Temporary storage for cube geometry
-	vector<VertexPNT> vtx(vbLen);
-	vector<unsigned short> idx(ibLen);
-
-	makeCube(1, vtx.begin(), idx.begin());
-	g_wall.reset(new Geometry(&vtx[0], &idx[0], vbLen, ibLen));
-}
-*/
 
 // takes a projection matrix and send to the the shaders
 static void sendProjectionMatrix(const ShaderState& curSS, const Matrix4& projMatrix) {
@@ -269,7 +277,7 @@ static Matrix4 makeProjectionMatrix() {
 
 static void drawStuff() {
   // short hand for current shader state
-  const ShaderState& curSS = *g_shaderStates[g_activeShader];
+  curSS = *g_shaderStates[g_activeShader];
 
   // build & send proj. matrix to vshader
   const Matrix4 projmat = makeProjectionMatrix();
@@ -363,7 +371,7 @@ static void motion(const int x, const int y) {
 			g_objectRbt[g_activeCube] = A * M*inv(A)*g_objectRbt[g_activeCube];
 		}
 		if (g_activeCube == 2) {
-			const ShaderState& curSS = *g_shaderStates[g_activeShader];
+			curSS = *g_shaderStates[g_activeShader];
 
 			// use the skyRbt as the eyeRbt
 			const Matrix4 eyeRbt = g_skyRbt;
@@ -490,7 +498,7 @@ static void initTextures() {
   g_tex.reset(new GlTexture());
   
   //loadTexture(*g_tex, "smiley.ppm");
-  loadTexture(*g_tex, "Fieldstone.ppm");
+  loadTexture(*g_tex, "FieldstoneNormal.ppm");
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, *g_tex);
