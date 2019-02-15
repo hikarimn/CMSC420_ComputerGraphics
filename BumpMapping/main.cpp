@@ -40,13 +40,13 @@ static bool g_mouseClickDown = false;    // is the mouse button pressed
 static bool g_mouseLClickButton, g_mouseRClickButton, g_mouseMClickButton;
 static int g_mouseClickX, g_mouseClickY; // coordinates for mouse click event
 static int g_activeShader = 0;
-static const ShaderState& curSS = *g_shaderStates[g_activeShader];
+
 
 struct ShaderState {
   GlProgram program;
 
   // Handles to uniform variables
-  GLint h_uLight, h_uLight2;
+  GLint h_uLight;
   GLint h_uProjMatrix;
   GLint h_uModelViewMatrix;
   GLint h_uNormalMatrix;
@@ -54,11 +54,16 @@ struct ShaderState {
   GLint h_uUseTexture;
   GLint h_uTexUnit;
   GLint h_aTexCoord;
+  GLint h_uTexUnit1;
+  GLint h_uSphere;
 
   // Handles to vertex attributes
   GLint h_aPosition;
   GLint h_aNormal;
   GLint h_aTexCoord0;
+  GLint h_aBinormal;
+  GLint h_aTangent;
+
 
   ShaderState(const char* vsfn, const char* fsfn) {
     readAndCompileShader(program, vsfn, fsfn);
@@ -73,11 +78,15 @@ struct ShaderState {
     h_uColor = safe_glGetUniformLocation(h, "uColor");
 	h_uUseTexture = safe_glGetUniformLocation(h,"uUseTexture");
     h_uTexUnit = safe_glGetUniformLocation(h, "uTexUnit");
+	h_uTexUnit1 = safe_glGetUniformLocation(h, "uTexUnit1");
+	h_uSphere = safe_glGetUniformLocation(h, "uSphere");
 
     // Retrieve handles to vertex attributes
     h_aPosition = safe_glGetAttribLocation(h, "aPosition");
     h_aNormal = safe_glGetAttribLocation(h, "aNormal");
     h_aTexCoord = safe_glGetAttribLocation(h, "aTexCoord");
+	h_aTangent = safe_glGetAttribLocation(h, "aTangent");
+	h_aBinormal = safe_glGetAttribLocation(h, "aBinormal");
 
     checkGlErrors();
   }
@@ -91,7 +100,7 @@ static const char * const g_shaderFiles[g_numShaders][2] = {
 };
 static vector<shared_ptr<ShaderState> > g_shaderStates; // our global shader states
 
-static shared_ptr<GlTexture> g_tex; // our global texture instance
+static shared_ptr<GlTexture> g_tex, g_texNormal; // our global texture instance
 
 // --------- Geometry
 
@@ -100,9 +109,9 @@ static shared_ptr<GlTexture> g_tex; // our global texture instance
 
 // A vertex with floating point position, normal, and texture
 struct VertexPNT {
-  Cvec3f p, n;
-  Cvec2f t;
-  Cvec3f tan, bin;
+  Cvec3f p, n;  //point coordinates, normal coordinates
+  Cvec2f t; //texture coordinates
+  Cvec3f tan, bin; //tangent vector, binormal vector
  
   VertexPNT() {}
   VertexPNT(float x, float y, float z,
@@ -110,13 +119,7 @@ struct VertexPNT {
 	  float tx, float ty)
 	  : p(x, y, z), n(nx, ny, nz), t(tx, ty)
   {}
-  VertexPNT(float x, float y, float z,
-           float nx, float ny, float nz,
-		   float tu, float tv,
-		   float tx, float ty, float tz,
-		   float bx, float by, float bz)
-    : p(x,y,z), n(nx, ny, nz), t(tu,tv), tan(tx,ty,tz),bin(bx,by,bz)
-  {}
+  
 
   // Define copy constructor and assignment operator from GenericVertex so we can
   // use make* functions from geometrymaker.h
@@ -141,17 +144,6 @@ struct Geometry {
   Geometry(VertexPNT *vtx, unsigned short *idx, int vboLen, int iboLen) {
     this->vboLen = vboLen;
     this->iboLen = iboLen;
-	Cvec4 obj;
-	Cvec4 s = (0, 0, 1, 0);  //?????????????????????
-	Cvec4 eye;
-	Matrix4 T = (vtx->tan[0], vtx->tan[1],vtx->tan[2],0,vtx->bin[0],vtx->bin[1],vtx->bin[2],vtx->n[0],vtx->n[1],vtx->n[2],0,0,0,1);
-	
-	obj = T * s;
-	Matrix4 M = curSS.h_uModelViewMatrix;
-	eye = M * obj;      //?????????????????
-	Cvec4 nvec = (vtx->t[0], vtx->t[1], vtx->t[2], 1);
-	Cvec3 dot = dot(normalize(transpose(inv(M))*T*nvec), normalize(obj));
-
 
 
     // Now create the VBO and IBO
@@ -167,12 +159,16 @@ struct Geometry {
     safe_glEnableVertexAttribArray(curSS.h_aPosition);
     safe_glEnableVertexAttribArray(curSS.h_aNormal);
     safe_glEnableVertexAttribArray(curSS.h_aTexCoord);
+	safe_glEnableVertexAttribArray(curSS.h_aBinormal);
+	safe_glEnableVertexAttribArray(curSS.h_aTangent);
 
     // bind vbo
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     safe_glVertexAttribPointer(curSS.h_aPosition, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPNT), FIELD_OFFSET(VertexPNT, p));
     safe_glVertexAttribPointer(curSS.h_aNormal, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPNT), FIELD_OFFSET(VertexPNT, n));
 	safe_glVertexAttribPointer(curSS.h_aTexCoord, 2, GL_FLOAT, GL_FALSE, sizeof(VertexPNT), FIELD_OFFSET(VertexPNT, t));
+	safe_glVertexAttribPointer(curSS.h_aTangent, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPNT), FIELD_OFFSET(VertexPNT, tan));
+	safe_glVertexAttribPointer(curSS.h_aBinormal, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPNT), FIELD_OFFSET(VertexPNT, bin));
 
     // bind ibo
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -184,19 +180,21 @@ struct Geometry {
     safe_glDisableVertexAttribArray(curSS.h_aPosition);
     safe_glDisableVertexAttribArray(curSS.h_aNormal);
     safe_glDisableVertexAttribArray(curSS.h_aTexCoord);
+	safe_glDisableVertexAttribArray(curSS.h_aTangent);
+	safe_glDisableVertexAttribArray(curSS.h_aBinormal);
   }
 };
 
 
 // Vertex buffer and index buffer associated with the ground and wall geometry amd sphere geometry
-static shared_ptr<Geometry> g_ground, g_cube, g_sphere, g_wall;
+static shared_ptr<Geometry> g_ground, g_cube, g_sphere;
 
 // --------- Scene
 
 static const Cvec3 g_light(0.0, 2.0, 0.0);    
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
-Matrix4 obj1 = Matrix4::makeTranslation(Cvec3(-2, -1, -1.5)) * Matrix4::makeXRotation(0.0, 1.0) * Matrix4::makeScale(Cvec3(0.01, 2, 2));
-Matrix4 obj2 = Matrix4::makeTranslation(Cvec3(2, -1, -1.5)) * Matrix4::makeXRotation(0.0, 1.0) *  Matrix4::makeScale(Cvec3(0.01, 2, 2));
+Matrix4 obj1 = Matrix4::makeTranslation(Cvec3(-1, 0, 0)) * Matrix4::makeYRotation(-20) * Matrix4::makeScale(Cvec3(0.2, 2, 2));
+Matrix4 obj2 = Matrix4::makeTranslation(Cvec3(1, 0, 0)) * Matrix4::makeYRotation(20) *  Matrix4::makeScale(Cvec3(0.2, 2, 2));
 static Matrix4 g_objectRbt[3] = { obj1,obj2, Matrix4::makeTranslation(g_light) };  // Two walls and a sphere
 static Cvec3f g_objectColors[3] = {Cvec3f(1, 0, 0),Cvec3f(0, 0, 1),Cvec3f(1, 1, 0) };
 static int g_activeCube = 2;
@@ -277,7 +275,9 @@ static Matrix4 makeProjectionMatrix() {
 
 static void drawStuff() {
   // short hand for current shader state
-  curSS = *g_shaderStates[g_activeShader];
+  const ShaderState& curSS = *g_shaderStates[g_activeShader];
+  safe_glUniform1i(curSS.h_uTexUnit, 0);
+  safe_glUniform1i(curSS.h_uTexUnit1, 1);
 
   // build & send proj. matrix to vshader
   const Matrix4 projmat = makeProjectionMatrix();
@@ -298,18 +298,19 @@ static void drawStuff() {
   Matrix4 MVM = invEyeRbt * groundRbt;
   Matrix4 NMVM = normalMatrix(MVM);
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
-  //safe_glUniform3f(curSS.h_uColor, 0.1, 0.95, 0.1); // set color
-  safe_glUniform1i(curSS.h_uUseTexture, 1); // Turn on textures for the second cube
+  safe_glUniform3f(curSS.h_uColor, 0.1, 0.95, 0.1); // set color
+  
   g_ground->draw(curSS);
 
   // draw cubes
   // ==========
   //
+
+  safe_glUniform1i(curSS.h_uUseTexture, 2); // Turn on textures for the second cube
   MVM = invEyeRbt * g_objectRbt[0];
   NMVM = normalMatrix(MVM);
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
   //safe_glUniform3f(curSS.h_uColor, g_objectColors[0][0], g_objectColors[0][1], g_objectColors[0][2]);
-  safe_glUniform1i(curSS.h_uUseTexture, 1); // Turn on textures for the second cube
   g_cube->draw(curSS);
 
   MVM = invEyeRbt * g_objectRbt[1];
@@ -320,13 +321,14 @@ static void drawStuff() {
 
   // draw a sphere
   // ==========
+  safe_glUniform1i(curSS.h_uSphere, 1);
   safe_glUniform1i(curSS.h_uUseTexture, 0); // Turn off textures for the sphere
   MVM = invEyeRbt * g_objectRbt[2];
   NMVM = normalMatrix(MVM);
   sendModelViewNormalMatrix(curSS, MVM, NMVM);
   safe_glUniform3f(curSS.h_uColor, g_objectColors[2][0], g_objectColors[2][1], g_objectColors[2][2]);
   g_sphere->draw(curSS);
-
+  safe_glUniform1i(curSS.h_uSphere, 0);
   
 }
 
@@ -371,7 +373,7 @@ static void motion(const int x, const int y) {
 			g_objectRbt[g_activeCube] = A * M*inv(A)*g_objectRbt[g_activeCube];
 		}
 		if (g_activeCube == 2) {
-			curSS = *g_shaderStates[g_activeShader];
+			const ShaderState& curSS = *g_shaderStates[g_activeShader];
 
 			// use the skyRbt as the eyeRbt
 			const Matrix4 eyeRbt = g_skyRbt;
@@ -480,13 +482,13 @@ static void initGeometry() {
   initSphere();
 }
 
-static void loadTexture(GLuint texHandle, const char *ppmFilename) {
+static void loadTexture(GLuint texHandle, const char *ppmFilename, int texture) {
   int texWidth, texHeight;
   vector<PackedPixel> pixData;
 
   ppmRead(ppmFilename, texWidth, texHeight, pixData);
 
-  glActiveTexture(GL_TEXTURE0);
+  glActiveTexture(texture);
   glBindTexture(GL_TEXTURE_2D, texHandle);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, texWidth, texHeight,
                0, GL_RGB, GL_UNSIGNED_BYTE, &pixData[0]);
@@ -496,12 +498,23 @@ static void loadTexture(GLuint texHandle, const char *ppmFilename) {
 
 static void initTextures() {
   g_tex.reset(new GlTexture());
-  
+  g_texNormal.reset(new GlTexture());
+
   //loadTexture(*g_tex, "smiley.ppm");
-  loadTexture(*g_tex, "FieldstoneNormal.ppm");
+
+  loadTexture(*g_tex, "Fieldstone.ppm", GL_TEXTURE0);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, *g_tex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+  loadTexture(*g_texNormal, "FieldstoneNormal.ppm", GL_TEXTURE1);
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, *g_texNormal);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
