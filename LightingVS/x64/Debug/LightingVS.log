@@ -1,0 +1,58 @@
+﻿  main.cpp
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(32): warning C4305: 'initializing': truncation from 'double' to 'float'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(108): warning C4005: 'FIELD_OFFSET': macro redefinition
+  c:\program files (x86)\windows kits\10\include\10.0.17134.0\um\winnt.h(1178): note: see previous definition of 'FIELD_OFFSET'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(266): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(291): warning C4244: 'argument': conversion from 'T' to 'const GLfloat', possible loss of data
+          with
+          [
+              T=double
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(301): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(384): warning C4244: 'argument': conversion from 'T' to 'const GLfloat', possible loss of data
+          with
+          [
+              T=double
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(461): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(58): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(226): note: see reference to function template instantiation 'void makeCube<std::_Vector_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>>(float,VtxOutIter,IdxOutIter)' being compiled
+          with
+          [
+              _Ty=VertexPNT,
+              VtxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<VertexPNT>>>,
+              IdxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(150): warning C4244: 'initializing': conversion from '_Ty' to 'float', possible loss of data
+          with
+          [
+              _Ty=double
+          ]
+  u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(238): note: see reference to function template instantiation 'void makeSphere<std::_Vector_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>>(float,int,int,VtxOutIter,IdxOutIter)' being compiled
+          with
+          [
+              _Ty=VertexPNT,
+              VtxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<VertexPNT>>>,
+              IdxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(151): warning C4244: 'initializing': conversion from '_Ty' to 'float', possible loss of data
+          with
+          [
+              _Ty=double
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(152): warning C4244: 'initializing': conversion from '_Ty' to 'float', possible loss of data
+          with
+          [
+              _Ty=double
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(155): warning C4244: 'argument': conversion from '_Ty' to 'const T', possible loss of data
+          with
+          [
+              _Ty=double
+          ]
+          and
+          [
+              T=float
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(161): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+  LightingVS.vcxproj -> U:\Class_Share\Economics\Econ_380_Lhost\mineh\CS\LightingVS\x64\Debug\LightingVS.exe
