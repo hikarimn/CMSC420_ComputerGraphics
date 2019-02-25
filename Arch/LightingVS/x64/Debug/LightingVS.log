@@ -1,0 +1,77 @@
+﻿  pch.cpp
+  glsupport.cpp
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\glsupport.cpp(60): warning C4838: conversion from 'unsigned __int64' to 'const GLint' requires a narrowing conversion
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\glsupport.cpp(60): warning C4267: 'initializing': conversion from 'size_t' to 'const GLint', possible loss of data
+  main.cpp
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\matrix4.h(133): warning C4244: '+=': conversion from 'double' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\matrix4.h(346): warning C4244: 'argument': conversion from 'double' to 'const T', possible loss of data
+          with
+          [
+              T=float
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\matrix4.h(345): warning C4244: 'argument': conversion from 'double' to 'const T', possible loss of data
+          with
+          [
+              T=float
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\matrix4.h(344): warning C4244: 'argument': conversion from 'double' to 'const T', possible loss of data
+          with
+          [
+              T=float
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\matrix4.h(343): warning C4244: 'argument': conversion from 'double' to 'const T', possible loss of data
+          with
+          [
+              T=float
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(37): warning C4305: 'initializing': truncation from 'double' to 'float'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(112): warning C4005: 'FIELD_OFFSET': macro redefinition
+  c:\program files (x86)\windows kits\10\include\10.0.17134.0\um\winnt.h(1178): note: see previous definition of 'FIELD_OFFSET'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(317): warning C4244: 'argument': conversion from 'double' to 'const T', possible loss of data
+          with
+          [
+              T=float
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(342): warning C4305: 'argument': truncation from 'double' to 'float'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(374): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(403): warning C4244: 'argument': conversion from 'const T' to 'const GLfloat', possible loss of data
+          with
+          [
+              T=double
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(404): warning C4244: 'argument': conversion from 'const T' to 'const GLfloat', possible loss of data
+          with
+          [
+              T=double
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(415): warning C4305: 'argument': truncation from 'double' to 'const GLfloat'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(576): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(78): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(296): note: see reference to function template instantiation 'void makeTriangle<std::_Vector_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>>(float,VtxOutIter,IdxOutIter)' being compiled
+          with
+          [
+              _Ty=VertexPN,
+              VtxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<VertexPN>>>,
+              IdxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>
+          ]
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(79): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\geometrymaker.h(247): error C2198: 'vMaker': too few arguments for call
+          with
+          [
+              vMaker=Cvec3f (__cdecl *)(float,float,Cvec3f)
+          ]
+  u:\class_share\economics\econ_380_lhost\mineh\cs\lightingvs\lightingvs\main.cpp(342): note: see reference to function template instantiation 'void makeArch<Cvec3f(__cdecl *)(float,float,Cvec3f),Cvec3f(__cdecl *)(float,float),std::_Vector_iterator<std::_Vector_val<std::_Simple_types<_Ty>>>,std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>>(float,float,unsigned short,bool,float,float,unsigned short,bool,vMaker,nMaker,VtxOutIter,IdxOutIter)' being compiled
+          with
+          [
+              _Ty=VertexPN,
+              vMaker=Cvec3f (__cdecl *)(float,float,Cvec3f),
+              nMaker=Cvec3f (__cdecl *)(float,float),
+              VtxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<VertexPN>>>,
+              IdxOutIter=std::_Vector_iterator<std::_Vector_val<std::_Simple_types<unsigned short>>>
+          ]
+  ppm.cpp
+  Generating Code...
