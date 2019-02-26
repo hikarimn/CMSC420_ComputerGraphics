@@ -237,23 +237,18 @@ struct Geometry {
 
 
 // Vertex buffer and index buffer associated with the ground and wall geometry amd sphere geometry
-static shared_ptr<Geometry> g_ground, g_arch,g_triangle;
+static shared_ptr<Geometry> g_ground, g_arch,g_arch1, g_arch2, g_triangle;
 
 // --------- Scene
 
 //static const Cvec3 g_light(0.0, 2.0, 0.0);
 static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
-//Matrix4 obj1 = Matrix4::makeTranslation(Cvec3(-1, 0, 0)) * Matrix4::makeYRotation(-20) * Matrix4::makeScale(Cvec3(0.2, 2, 2));
-//Matrix4 obj2 = Matrix4::makeTranslation(Cvec3(1, 0, 0)) * Matrix4::makeYRotation(20) *  Matrix4::makeScale(Cvec3(0.2, 2, 2));
-//static Matrix4 g_objectRbt[2] = { obj1,obj2, Matrix4::makeTranslation(g_light) };  // Two walls and a sphere
-//static Cvec3f g_objectColors[3] = { Cvec3f(1, 0, 0),Cvec3f(0, 0, 1),Cvec3f(1, 1, 0) };
+
 static int g_active = 0;
-static Matrix4 g_Triangle = Matrix4::makeTranslation(Cvec3(0, 0, 0));
-static Matrix4 g_Arch = Matrix4::makeTranslation(Cvec3(0,0,0.2));
+static Matrix4 g_Arch = Matrix4::makeTranslation(Cvec3(0,1,0));\
 static Cvec3f g_archColor = Cvec3f(1, 0, 0);
-static Cvec3f g_TriangleColor = Cvec3f(1, 1, 0);
-static Matrix4 g_objectRbt[2] = { g_Triangle,g_Arch };
+static Matrix4 g_objectRbt[1] = { g_Arch };
 
 static Matrix4 eyeRbt = g_skyRbt;
 static Matrix4 invEyeRbt = inv(eyeRbt);
@@ -317,32 +312,42 @@ static void initTriangle() {
 Cvec3f makeCylinderV(float s, float t) { return Cvec3f(3*(0.69*cos(s)*sinh(t / 100)), 3*(cos(s) - 68.7672*(-1 + cosh(t / 100))), t/6); }
 Cvec3f makeCylinderN(float s, float t) { return Cvec3f(2*t/sqrt(1+4*t*t), 1/sqrt(1+4*t*t), 0); }
 Cvec4f curve = Cvec4f(1,0,-1,1);
+
 Cvec3f makeArchV(float t, float a, Cvec3f point) {
-	Cvec4f T = Cvec4f(1, -sinh(t / a), 0, 0);
-	Cvec4f N = Cvec4f(T[1], -T[2], 0, 0);
-	Cvec4f B = Cvec4f(cross(Cvec3f(N), Cvec3f(T)), 0);
+	Cvec4f T = Cvec4f(1, -sinh(t / a), 0, 0).normalize();
+	Cvec4f N = Cvec4f(T[1], -T[0], 0, 0).normalize();
+	Cvec4f B = Cvec4f(cross(Cvec3f(N), Cvec3f(T)), 0).normalize();
 	Cvec4f p = Cvec4f(t, -a*cosh(t / a), 0, 1);
-	return Cvec3f(Matrix4(N, T, B, p) * Cvec4f(point,1));
+	Matrix4 m4 = Matrix4(N, T, B, p);
+	return Cvec3f(m4 * Cvec4f(point,1));
 }
 
-Cvec3f makeArchN(float s, float t) { return Cvec3f(2 * t / sqrt(1 + 4 * t*t), 1 / sqrt(1 + 4 * t*t), 0); }
 
 static void initArch() {
+	float a1 = 0.2;
+	float a2 = 0.2;
+	float a3 = 0.2;
+	float side = 0.5;
+	int steps = 80;
 	int iblen, vblen;
 	//getArchVbIbLen(vbLen, ibLen);
-	getArchVbIbLen(40, true, 2, false, vblen, iblen);
+	getArchVbIbLen(steps, vblen, iblen);
 
 	vector<VertexPN> vtx(vblen);
 	vector<unsigned short> idx(iblen);
+	Cvec3f point1 = Cvec3f(-2, 0, 0); // starting point
+	Cvec3f point2 = Cvec3f(point1[0] + sqrt(side*side - side*side/4), 0, point1[2] - side/2);
+	Cvec3f point3 = Cvec3f(point1[0], 0, point1[2] - side);
 
-	//void makeSurface(float start_s, float step_s, unsigned short s_steps, bool wrap_s,
-	//float start_t, float step_t, unsigned short t_steps, bool wrap_t, vMaker makeV, nMaker makeN,
-	//	VtxOutIter vtxIter, IdxOutIter idxIter)       CS175_PI = 180
-	makeArch(0.0,  2*CS175_PI / 40, 40, true, 0.0, 0.5, 2, false,
-		makeArchV, makeCylinderN, vtx.begin(), idx.begin());
-	//makeSurface(0.0, 2 * 3.CS175_PI / 20, 20, true, 0.0, 0.5, 2, false, makeCylinderV, makeCylinderN, vtx.begin(), idx.begin());
-	//makeArch(vtx.begin(), idx.begin());
-	g_arch.reset(new Geometry(&vtx[0], &idx[0], vblen, iblen,2));
+	makeArch(a1,a2,steps, point2, point1, makeArchV, vtx.begin(), idx.begin());
+	g_arch.reset(new Geometry(&vtx[0], &idx[0], vblen, iblen,1));
+
+	makeArch(a2, a3, steps, point3, point2, makeArchV, vtx.begin(), idx.begin());
+	g_arch1.reset(new Geometry(&vtx[0], &idx[0], vblen, iblen, 1));
+
+	makeArch(a1, a3, steps, point1, point3, makeArchV, vtx.begin(), idx.begin());
+	g_arch2.reset(new Geometry(&vtx[0], &idx[0], vblen, iblen, 1));
+
 	cout << "initArch" << endl;
 }
 /*********************************************************************************************************************************************************************************************************************/
@@ -421,23 +426,13 @@ static void drawStuff() {
 	//draw an arch
 	// ==========
 	//
-	MVM = invEyeRbt * g_objectRbt[1];
+	MVM = invEyeRbt * g_objectRbt[0];
 	NMVM = normalMatrix(MVM);
 	sendModelViewNormalMatrix(curSS, MVM, NMVM);
 	safe_glUniform3f(curSS.h_uColor, g_archColor[0], g_archColor[1], g_archColor[2]);
 	g_arch->draw(curSS);
-
-	// draw trinalge
-	// ==========
-	//
-	MVM = invEyeRbt * g_objectRbt[0];
-	NMVM = normalMatrix(MVM);
-	sendModelViewNormalMatrix(curSS, MVM, NMVM);
-	safe_glUniform3f(curSS.h_uColor, g_TriangleColor[0], g_TriangleColor[1], g_TriangleColor[2]);
-	g_triangle->draw(curSS);
-
-	
-
+	g_arch1->draw(curSS);
+	g_arch2->draw(curSS);
 }
 
 static void display() {

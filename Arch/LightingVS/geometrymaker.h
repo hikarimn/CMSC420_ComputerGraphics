@@ -223,98 +223,49 @@ void makeSurface(float start_s, float step_s, unsigned short s_steps, bool wrap_
 }
 
 /*tring to make an arch************************************/
-inline void getArchVbIbLen(int s_steps, bool wrap_s, int t_steps, bool wrap_t, int& vbLen, int& ibLen) {
-	assert(s_steps > 1);
-	vbLen = (s_steps + (wrap_s ? 0 : 1)) * (t_steps + (wrap_t ? 0 : 1));
-	ibLen = (s_steps * 2 + 2)*t_steps;
+inline void getArchVbIbLen(int steps, int& vbLen, int& ibLen) {
+	vbLen = (steps + 1) * 2;
+	ibLen = (steps + 1) * 2;
 }
 
-template<typename vMaker, typename nMaker, typename VtxOutIter, typename IdxOutIter>
-void makeArch( float start_t, float step_t, unsigned short t_steps, bool wrap_t, vMaker makeV, nMaker makeN,
+template<typename vMaker,  typename VtxOutIter, typename IdxOutIter>
+void makeArch(float a1, float a2,  unsigned short steps, Cvec3f point1, Cvec3f point2, vMaker makeV,
 	VtxOutIter vtxIter, IdxOutIter idxIter) {
-	
-	unsigned short t, next_t;
 
-	unsigned short tCount = t_steps + (wrap_t ? 0 : 1);
+	VtxOutIter a, b;
 
+	unsigned short t, next;
+	float step1 = ( -point1[0])*2/steps;
+	float step2 = ( -point2[0]) * 2 /steps;
 	// Make the vertices
-	for (t = 0; t < tCount; t++) {
-			float paramT = start_t + t * step_t;
-			Cvec3f vertex = makeV(paramT,1.030);
-			Cvec3f normal = makeN(paramS, paramT);
-			*vtxIter = SmallVertex(vertex, normal);
-			++vtxIter;
+	for (t = 0; t <= steps; t++) {
+		float paramT1 = point1[0] + t * step1;
+		float paramT2 = point2[0] + t * step2;
+		Cvec3f vertex1 = makeV(paramT1, a1, point1);
+		Cvec3f vertex2 = makeV(paramT2, a2, point2);
+		Cvec3f normal;
+		if (t != 0) {
+			Cvec3f edge1 = b->p - a->p;
+			Cvec3f edge2 = a->p - vertex1;
+			normal = cross(edge1, edge2).normalize();
+			a->n = normal;
+			b->n = normal;
+		}
+		//Cvec3f normal = cross(b-a, vertex1 - a).normalize();
+		*vtxIter = SmallVertex(vertex1, normal);
+		a = vtxIter++;
+		*vtxIter = SmallVertex(vertex2, normal);
+		b = vtxIter++;
 	}
 
 	// Construct a series of triangle strips, one per t step
 	// We use an indexed representation for the triangle strips
-	for (t = 0; t < t_steps - 1; t++) {
-		next_t = t + 1;
-		for (s = 0; s < s_steps; s++) {
-			*idxIter = t * sCount + s;
-			++idxIter;
-			*idxIter = next_t * sCount + s;
-			++idxIter;
-		}
-		if (wrap_s)
-			s = 0;
-		else
-			s++;
-		*idxIter = t * sCount + s;
-		++idxIter;
-		*idxIter = next_t * sCount + s;
+	for (t = 0; t < steps*2+2; t++) {
+		*idxIter = t;
 		++idxIter;
 	}
-	if (wrap_t)
-		next_t = 0;
-	else
-		next_t = t + 1;
-	for (s = 0; s < s_steps; s++) {
-		*idxIter = t * sCount + s;
-		++idxIter;
-		*idxIter = next_t * sCount + s;
-		++idxIter;
-	}
-	if (wrap_s)
-		s = 0;
-	else
-		s++;
-	*idxIter = t * sCount + s;
-	++idxIter;
-	*idxIter = next_t * sCount + s;
-	++idxIter;
 
-
-	// wjat is thisiiss 
-/*
-	for (int t = 0; t < 10; ++t) {
-			float x = t;
-			float y = 4 - t*t;
-			float z = 0;
-
-			cvec4f n1(1,-2*t,0,0);
-			cvec4f n = n1 / sqrt(1 + 4 * t * t);
-			cvec4f t1(2 * t,1, 0, 0);
-			cvec4f t2 = t1/ sqrt(1 + 4 * t * t);
-			cvec4f b = cvec4f(0,0,1,0);
-
-			
-
-			*vtxiter = genericvertex(
-				0.1, 0.1, 0.1,
-				0.2, 0.2, 0.2,
-				1.0, 1.0,
-				t2[0], t2[1], t2[2],
-				b[0], b[1], b[2]);
-			++vtxiter;
-
-			*idxiter = 0;
-			*(++idxiter) = 1;
-			*(++idxiter) = 2;
-		
-	}*/
 }
-
 /*************************************************************/
 
 //http://www.songho.ca/opengl/gl_sphere.html

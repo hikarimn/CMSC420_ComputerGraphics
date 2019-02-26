@@ -42,19 +42,11 @@ public:
   }
 
   Matrix4(const Cvec4f a, const Cvec4f b, const Cvec4f c, const Cvec4f d) {
-	  for (int i = 0; i < 16; i++) {
-		  if (i < 4) {
-			  (*this)(0, i) = a[i];
-		  }
-		  else if (i < 8) {
-			  (*this)(1, i) = b[i];
-		  }
-		  else if (i < 12) {
-			  (*this)(2, i) = c[i];
-		  }
-		  else {
-			  (*this)(3, i) = d[i];
-		  }
+	  for (int i = 0; i < 4; i++) {
+		  (*this)(i, 0) = a[i];
+		  (*this)(i, 1) = b[i];
+		  (*this)(i, 2) = c[i];
+		  (*this)(i, 3) = d[i];
 	  }
   }
   Matrix4(const double a) {
