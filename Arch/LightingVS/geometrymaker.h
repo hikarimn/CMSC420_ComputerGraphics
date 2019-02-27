@@ -228,17 +228,30 @@ inline void getArchVbIbLen(int steps, int& vbLen, int& ibLen) {
 	ibLen = (steps + 1) * 2;
 }
 
-template<typename vMaker,  typename VtxOutIter, typename IdxOutIter>
-void makeArch(float a1, float a2,  unsigned short steps, Cvec3f point1, Cvec3f point2, vMaker makeV,
+template<typename vMaker, typename pMaker, typename VtxOutIter, typename IdxOutIter>
+void makeArch(float a1, float a2,  unsigned short steps, pMaker makeP1, pMaker makeP2, vMaker makeV, float side,
 	VtxOutIter vtxIter, IdxOutIter idxIter) {
 
 	VtxOutIter a, b;
+	float side1 = side;
+	Cvec3f point = Cvec3f(-1.5, 0, 0); // starting point
 
 	unsigned short t, next;
-	float step1 = ( -point1[0])*2/steps;
-	float step2 = ( -point2[0]) * 2 /steps;
+	float step1 ;
+	float step2 ;
 	// Make the vertices
+	/*****************************************NEED***********************TO*************************************CHANGE******************************************************HERE****************************************************/
 	for (t = 0; t <= steps; t++) {
+		side1 = side - (side / 2)*(t / steps);
+		Cvec3f point1 = makeP1(side1, point);
+		Cvec3f point2 = makeP2(side1, point);
+
+		if (t == 0) {
+			step1 = (-point1[0]) * 2 / steps;
+			step2 = (-point2[0]) * 2 / steps;
+		}
+		else {}
+
 		float paramT1 = point1[0] + t * step1;
 		float paramT2 = point2[0] + t * step2;
 		Cvec3f vertex1 = makeV(paramT1, a1, point1);
