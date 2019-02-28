@@ -184,14 +184,12 @@ static shared_ptr<Geometry> g_ground, g_arch,g_arch1, g_arch2;
 
 // --------- Scene
 
-//static const Cvec3 g_light(0.0, 2.0, 0.0);
 static const Cvec3 g_light1(2.0, 3.0, 14.0), g_light2(-2, -3.0, -5.0);  // define two lights positions in world space
-//static Matrix4 g_skyRbt = Matrix4::makeTranslation(Cvec3(0.0, 0.25, 4.0));
-static Cvec3 eyeRbtInit = Cvec3(0.0,0.25,4.0);
+static Cvec3 eyeRbtInit = Cvec3(0.0,0.25,8.0);
 static Matrix4 g_skyRbt = Matrix4::makeTranslation(eyeRbtInit);
 
 static int g_active = 0;
-static Matrix4 g_Arch = Matrix4::makeTranslation(Cvec3(0,1,0));\
+static Matrix4 g_Arch = Matrix4::makeTranslation(Cvec3(0,3.5,0));
 static Cvec3f g_archColor = Cvec3f(0.45, 0.45, 0.45);
 static Matrix4 g_objectRbt[1] = { g_Arch };
 static RigTForm A = RigTForm(Cvec3(0,1,0), Quat(0.0, Cvec3(0.0, 0.0, 4.0)));
@@ -215,9 +213,6 @@ static void initGround() {
 	g_ground.reset(new Geometry(&vtx[0], &idx[0], 4, 6, false));
 }
 
-/*new !!!!!!!!!!!!!!!!!!!**************************************************************************************************************************************************************************************************************/
-
-
 //http://mathworld.wolfram.com/Catenary.html
 
 
@@ -230,45 +225,33 @@ Cvec3f makeArchV(float t, float a, Cvec3f point) {
 	return Cvec3f(m4 * Cvec4f(point,1));
 }
 
-Cvec3f makePoint1(float side, Cvec3f point1) {
-	return point1;
-}
-Cvec3f makePoint2(float side,  Cvec3f point1){
-	return Cvec3f(point1[0] + sqrt(side*side - side * side / 4), 0, point1[2] - side / 2);
-}
-Cvec3f makePoint3(float side, Cvec3f point1) {
-	return Cvec3f(point1[0], 0, point1[2] - side);
-}
 
 static void initArch() {
 	float a1 = 0.5;
 	float a2 = 0.5;
 	float a3 = 0.5;
-	float side = 0.25;
-	int steps = 160;
+	float side = 0.5;
+	int steps = 80;
 	int iblen, vblen;
-	//getArchVbIbLen(vbLen, ibLen);
 	getArchVbIbLen(steps, vblen, iblen);
 
 	vector<VertexPN> vtx(vblen);
 	vector<unsigned short> idx(iblen);
-	//Cvec3f point1 = Cvec3f(-2, 0, 0); // starting point
-	//Cvec3f point2 = Cvec3f(point1[0] + sqrt(side*side - side*side/4), 0, point1[2] - side/2);
-	//Cvec3f point3 = Cvec3f(point1[0], 0, point1[2] - side);
+	Cvec3f point1 = Cvec3f(-2, 0, 0); // starting point
+	Cvec3f point2 = Cvec3f(point1[0] + sqrt(side*side - side*side/4), 0, point1[2] - side/2);
+	Cvec3f point3 = Cvec3f(point1[0], 0, point1[2] - side);
 
-	makeArch(a1, a2, steps, makePoint2, makePoint1, makeArchV, side, vtx.begin(), idx.begin());
+	makeArch(a1, a2, a3, steps, point1, point2, point3, makeArchV,  vtx.begin(), idx.begin());
 	g_arch.reset(new Geometry(&vtx[0], &idx[0], vblen, iblen, 1));
 
-	makeArch(a2, a3, steps, makePoint3, makePoint2, makeArchV, side, vtx.begin(), idx.begin());
+	makeArch(a2, a3, a1, steps, point2, point3, point1, makeArchV,  vtx.begin(), idx.begin());
 	g_arch1.reset(new Geometry(&vtx[0], &idx[0], vblen, iblen, 1));
 
-	makeArch(a1, a3, steps, makePoint1, makePoint3, makeArchV, side, vtx.begin(), idx.begin());
+	makeArch(a1, a3, a2, steps, point3, point1,point2, makeArchV,  vtx.begin(), idx.begin());
 	g_arch2.reset(new Geometry(&vtx[0], &idx[0], vblen, iblen, 1));
 
 	cout << "initArch" << endl;
 }
-/**************************************************************************************************************************************************************************************************************************************/
-
 
 // takes a projection matrix and send to the the shaders
 static void sendProjectionMatrix(const ShaderState& curSS, const Matrix4& projMatrix) {
@@ -306,8 +289,6 @@ static Matrix4 makeProjectionMatrix() {
 static void drawStuff() {
 	// short hand for current shader state
 	const ShaderState& curSS = *g_shaderStates[g_activeShader];
-	//safe_glUniform1i(curSS.h_uTexUnit, 0);
-	//safe_glUniform1i(curSS.h_uTexUnit1, 1);
 
 	// build & send proj. matrix to vshader
 	const Matrix4 projmat = makeProjectionMatrix();

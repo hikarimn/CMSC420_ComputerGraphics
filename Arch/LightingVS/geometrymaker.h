@@ -64,15 +64,6 @@ inline void getTriangleVbIbLen(int& vbLen, int& ibLen) {
 	ibLen = 3;
 }
 
-/*
-GenericVertex(
-    float x, float y, float z,
-    float nx, float ny, float nz,
-    float tu, float tv,
-    float tx, float ty, float tz,
-    float bx, float by, float bz)
-    : pos(x,y,z), normal(nx,ny,nz), tex(tu, tv), tangent(tx, ty, tz), binormal(bx, by, bz)
-	*/
 template<typename VtxOutIter, typename IdxOutIter>
 void makeTriangle(float size, VtxOutIter vtxIter, IdxOutIter idxIter) {
 	float h = size / 2.0;
@@ -222,44 +213,39 @@ void makeSurface(float start_s, float step_s, unsigned short s_steps, bool wrap_
 	++idxIter;
 }
 
-/*tring to make an arch************************************/
+/**arch************************************/
 inline void getArchVbIbLen(int steps, int& vbLen, int& ibLen) {
 	vbLen = (steps + 1) * 2;
 	ibLen = (steps + 1) * 2;
 }
 
-template<typename vMaker, typename pMaker, typename VtxOutIter, typename IdxOutIter>
-void makeArch(float a1, float a2,  unsigned short steps, pMaker makeP1, pMaker makeP2, vMaker makeV, float side,
+template<typename vMaker, typename VtxOutIter, typename IdxOutIter>
+void makeArch(float a1, float a2, float a3, unsigned short steps, Cvec3f point1, Cvec3f point2, Cvec3f point3, vMaker makeV,
 	VtxOutIter vtxIter, IdxOutIter idxIter) {
 
 	VtxOutIter a, b;
-	float side1 = side;
-	Cvec3f point = Cvec3f(-1.5, 0, 0); // starting point
 
 	unsigned short t, next;
-	float step1 ;
-	float step2 ;
-	// Make the vertices
-	/*****************************************NEED***********************TO*************************************CHANGE******************************************************HERE****************************************************/
+	float step1 = (-point1[0]) * 2 / steps;
+	float step2 = (-point2[0]) * 2 / steps ;
+	float step3 = (-point3[0]) * 2 / steps;
+	
 	for (t = 0; t <= steps; t++) {
-		side1 = side - (side / 2)*(t / steps);
-		Cvec3f point1 = makeP1(side1, point);
-		Cvec3f point2 = makeP2(side1, point);
-
-		if (t == 0) {
-			step1 = (-point1[0]) * 2 / steps;
-			step2 = (-point2[0]) * 2 / steps;
-		}
-		else {}
-
 		float paramT1 = point1[0] + t * step1;
 		float paramT2 = point2[0] + t * step2;
+		float paramT3 = point3[0] + t * step3;
 		Cvec3f vertex1 = makeV(paramT1, a1, point1);
 		Cvec3f vertex2 = makeV(paramT2, a2, point2);
+		Cvec3f vertex3 = makeV(paramT3, a3, point3);
+		Cvec3f center = (vertex1 + vertex2 + vertex3) / 3;
+		float ratio = abs(t - (steps / 2.0)) / (steps / 2.0);
+		vertex1 = center + (vertex1 - center)/2 * (ratio+1);
+		vertex2 = center + (vertex2 - center)/2 * (ratio+1);
+
 		Cvec3f normal;
 		if (t != 0) {
 			Cvec3f edge1 = b->p - a->p;
-			Cvec3f edge2 = a->p - vertex1;
+			Cvec3f edge2 = vertex1 - a->p;
 			normal = cross(edge1, edge2).normalize();
 			a->n = normal;
 			b->n = normal;
@@ -277,9 +263,7 @@ void makeArch(float a1, float a2,  unsigned short steps, pMaker makeP1, pMaker m
 		*idxIter = t;
 		++idxIter;
 	}
-
 }
-/*************************************************************/
 
 //http://www.songho.ca/opengl/gl_sphere.html
 inline void getSphereVbIbLen(int slices, int stacks, int& vbLen, int& ibLen) {
